@@ -1,11 +1,11 @@
-# 🦆 ArcGIS-Online User Deletion Tool
+# :world_map: ArcGIS-Online User Deletion Tool
 
 Automates the full prerequisite chain required by ArcGIS Online before a user
 account can be deleted, then deletes the account via the REST API.
 
 ## 📃 Table of Contents
 
-- [🦆 ArcGIS-Online User Deletion Tool](#-arcgis-online-user-deletion-tool)
+- [:world\_map: ArcGIS-Online User Deletion Tool](#world_map-arcgis-online-user-deletion-tool)
   - [📃 Table of Contents](#-table-of-contents)
   - [📖 Description](#-description)
   - [✅ Features](#-features)
