@@ -1,0 +1,6 @@
+credentials.txt
+*.env
+.env
+__pycache__/
+*.pyc
+reports/
