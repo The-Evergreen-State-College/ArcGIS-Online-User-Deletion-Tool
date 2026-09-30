@@ -10,6 +10,7 @@ account can be deleted, then deletes the account via the REST API.
   - [📖 Description](#-description)
   - [✅ Features](#-features)
   - [📦 Requirements](#-requirements)
+    - [Install python requirements for the project](#install-python-requirements-for-the-project)
   - [🗂️ Files](#️-files)
   - [📗 Instructions](#-instructions)
     - [1. Configure credentials](#1-configure-credentials)
@@ -79,8 +80,9 @@ process is repeatable, auditable, and safe to run in bulk.
 | [keyring](https://pypi.org/project/keyring/) | Optional; used as a fallback credential source instead of plaintext `credentials.txt` |
 | ArcGIS Online admin account | Must have content, group, and license administration privileges |
 
+### Install python requirements for the project
 ```powershell
-pip install -r requirements.txt
+pip -m install -r requirements.txt
 ```
 
 ## 🗂️ Files

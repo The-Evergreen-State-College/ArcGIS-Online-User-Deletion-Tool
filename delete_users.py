@@ -623,7 +623,7 @@ def main():
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--url", required=True, help="ArcGIS Online org URL")
+    parser.add_argument("--url",help="ArcGIS Online org URL (overrides AGO_URL in .env)",)
     parser.add_argument("--input", required=True, help="CSV file with a 'username' column")
     parser.add_argument("--dry-run", action="store_true", help="Preview actions without deleting")
     parser.add_argument("--yes", action="store_true", help="Skip confirmation prompt")
@@ -634,10 +634,29 @@ def main():
 
     args = parser.parse_args()
 
+    # Determine the ArcGIS Online organization URL.
+    # Priority: --url argument -> AGO_URL in .env -> console prompt.
+    if args.url:
+        ago_url = args.url.strip()
+    else:
+        env_values = read_credentials(args.credentials_file)
+        ago_url = (env_values.get("AGO_URL") or "").strip()
+    
+    if not ago_url:
+        ago_url = input("ArcGIS Online organization URL: ").strip()
+    
+    if not ago_url:
+        parser.error(
+            "ArcGIS Online organization URL is required. "
+            "Set AGO_URL in .env, use --url, or enter it when prompted."
+        )
+
+
+
     log_path = setup_logging(args.logs_dir)
     log.info("Logging to %s", log_path)
 
-    gis = connect(args.url, args.credentials_file)
+    gis = connect(ago_url, args.credentials_file)
     admin_username = gis.users.me.username
 
     year = read_year_filter(args.year_file)
