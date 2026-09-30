@@ -18,6 +18,17 @@
 
 ---
 
+#### Version 1.1.0
+#### Added
+- requirements
+#### Changed
+- txt files to .env files
+- Credentials are loaded via `python-dotenv`
+- .gitignore list
+
+
+---
+
 
 #### Version 1.0.0 
 

@@ -1,6 +1,6 @@
 # :world_map: ArcGIS-Online User Deletion Tool
 
-Automates the full prerequisite chain required by ArcGIS Online before a user
+Automates the deletion for user accounts in ArcGIS Online by processing the full prerequisite chain required before a user
 account can be deleted, then deletes the account via the REST API.
 
 ## 📃 Table of Contents
@@ -24,6 +24,9 @@ account can be deleted, then deletes the account via the REST API.
 
 ## 📖 Description
 
+ESRI ArcGIS Online enterprise instances have no built in mechanism to bulk process the deletion of user accounts.
+This is a major pain point for ArcGIS Online enterprise instance administration.
+
 ArcGIS Online will not let you delete a user account until:
 
 1. All content ownership is removed (every item the user owns).
@@ -36,6 +39,11 @@ Only then can `POST /sharing/rest/community/users/{username}/delete` succeed.
 talking directly to the ArcGIS Online REST API (via an authenticated
 [ArcGIS API for Python](https://developers.arcgis.com/python/) session) so the
 process is repeatable, auditable, and safe to run in bulk.
+
+
+> ⚠️ :hammer: **Warning note:** The current iteration of the tool is a sledge hammer!
+> It deletes all content a user owns before deletion.
+
 
 ## ✅ Features
 
@@ -57,6 +65,8 @@ process is repeatable, auditable, and safe to run in bulk.
   metadata.
 - 📊 A timestamped per-run report (status + notes for every step) is written
   to [`reports/`](reports).
+- 🪵 **Structured logging** via Python's `logging` module — every action is
+  logged to both STDOUT and a timestamped file under `logs/` for auditing.
 
 ## 📦 Requirements
 
@@ -77,10 +87,12 @@ pip install -r requirements.txt
 |---|---|
 | [`delete_users.py`](delete_users.py) | Main script |
 | [`users.csv`](users.csv) | Input queue — one `username` per line |
-| [`credentials.txt`](credentials.txt) | Optional local `admin_username=`/`admin_password=` file (not committed) |
+| [`.env`](.env) | Optional local `ADMIN_USERNAME=`/`ADMIN_PASSWORD=` file (not committed) |
+| [`.env.template`](.env.template) | Committed template; copy to .env |
 | [`delete_users_by_year.txt`](delete_users_by_year.txt) | Optional `LAST_LOGON_YEAR=<year>` filter |
 | [`deleted_users.csv`](deleted_users.csv) | Running audit log of every user this tool has deleted |
 | [`reports/`](reports) | Per-run CSV reports (status/notes per user) |
+| `logs/` | Timestamped `.log` files (structured logging output, gitignored) |
 
 ## 📗 Instructions
 
@@ -149,9 +161,13 @@ for unattended/scheduled runs.
 | `--credentials-file` | `credentials.txt` | Path to the admin credentials file |
 | `--deleted-log` | `deleted_users.csv` | Audit log appended to on each successful deletion |
 | `--year-file` | `delete_users_by_year.txt` | Optional `LAST_LOGON_YEAR=<year>` auto-queue filter |
+| `--logs-dir` | `logs` | Directory for the timestamped `.log` file (in addition to STDOUT) |
 
 ## 📓 Logs & Reports
 
+- **Structured log:** `logs/delete_users_<timestamp>.log` — every action is
+  logged via Python's `logging` module to both STDOUT and this file
+  (`timestamp [LEVEL] message`), for auditing.
 - **Per-run report:** `reports/<input>_report_<timestamp>.csv` — one row per
   user with `status` and detailed `notes` for every step.
 - **Audit log:** `deleted_users.csv` — one row per successfully deleted user:

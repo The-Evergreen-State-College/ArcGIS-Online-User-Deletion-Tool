@@ -24,10 +24,13 @@ import argparse
 import csv
 import datetime
 import getpass
+import logging
 import os
 import sys
 
+from arcgis import gis
 from arcgis.gis import GIS
+from dotenv import dotenv_values
 
 try:
     import keyring
@@ -36,33 +39,56 @@ except ImportError:  # optional dependency, only needed for the keyring fallback
 
 KEYRING_SERVICE = "arcgis-online-delete-users"
 
+log = logging.getLogger("delete_users")
+
+
+def setup_logging(logs_dir: str) -> str:
+    """Configure logging to STDOUT and a timestamped file under logs_dir; returns the log file path."""
+    os.makedirs(logs_dir, exist_ok=True)
+    stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_path = os.path.join(logs_dir, f"delete_users_{stamp}.log")
+
+    formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
+
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.setFormatter(formatter)
+
+    file_handler = logging.FileHandler(log_path, encoding="utf-8")
+    file_handler.setFormatter(formatter)
+
+    log.setLevel(logging.INFO)
+    log.handlers.clear()
+    log.addHandler(stream_handler)
+    log.addHandler(file_handler)
+    return log_path
+
+
+def log_note(note: str) -> None:
+    """Log a per-step note at a severity that matches its ERROR/FAILED marker, if any."""
+    if note.startswith("ERROR"):
+        log.error("  - %s", note)
+    elif "FAILED" in note:
+        log.warning("  - %s", note)
+    else:
+        log.info("  - %s", note)
+
 
 def read_credentials(path: str) -> dict[str, str]:
-    """Read admin_username/admin_password key=value pairs from a local file, if present."""
-    values: dict[str, str] = {}
+    """Read ADMIN_USERNAME / ADMIN_PASSWORD from a .env file, if present."""
     if not path or not os.path.isfile(path):
-        return values
-    with open(path, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            key, _, value = line.partition("=")
-            key, value = key.strip(), value.strip()
-            if value:
-                values[key] = value
-    return values
+        return {}
+    return {k: v for k, v in dotenv_values(path).items() if v}
 
 
 def connect(url: str, credentials_file: str) -> GIS:
     values = read_credentials(credentials_file)
-    username = values.get("admin_username")
-    password = values.get("admin_password")
+    username = values.get("ADMIN_USERNAME")
+    password = values.get("ADMIN_PASSWORD")
 
     if username and password:
         print(f"Using credentials from {credentials_file}")
     else:
-        # credentials.txt missing or incomplete: fall back to keyring, then an interactive prompt.
+        # .env missing or incomplete: fall back to keyring, then an interactive prompt.
         if not username:
             username = input(f"Admin username for {url}: ").strip()
         password = keyring.get_password(KEYRING_SERVICE, username) if keyring else None
@@ -72,8 +98,9 @@ def connect(url: str, credentials_file: str) -> GIS:
             password = getpass.getpass("Admin password: ")
 
     gis = GIS(url, username, password)
-    print(f"Connected to {url} as {gis.users.me.username}")
-    return gis
+   log.info("Connected to %s as %s", url, gis.users.me.username)
+return gis
+ 
 
 
 def read_usernames(csv_path: str) -> list[str]:
@@ -306,8 +333,8 @@ def main():
     parser.add_argument("--yes", action="store_true", help="Skip the confirmation prompt")
     parser.add_argument(
         "--credentials-file",
-        default="credentials.txt",
-        help="Path to a local admin_username=/admin_password= file (falls back to an interactive prompt if missing)",
+        default=".env",
+        help="Path to a local .env with ADMIN_USERNAME=/ADMIN_PASSWORD= (falls back to keyring, then an interactive prompt if missing)",
     )
     parser.add_argument(
         "--deleted-log",
@@ -319,42 +346,50 @@ def main():
         default="delete_users_by_year.txt",
         help="Optional file with LAST_LOGON_YEAR=<year>; matching org users are queued into --input",
     )
+    parser.add_argument(
+        "--logs-dir",
+        default="logs",
+        help="Directory to write a timestamped .log file to (in addition to STDOUT)",
+    )
     args = parser.parse_args()
+
+    log_path = setup_logging(args.logs_dir)
+    log.info("Logging to %s", log_path)
 
     gis = connect(args.url, args.credentials_file)
 
     year = read_year_filter(args.year_file)
     if year is not None:
-        print(f"Year filter active ({args.year_file}): LAST_LOGON_YEAR={year}")
+        log.info("Year filter active (%s): LAST_LOGON_YEAR=%s", args.year_file, year)
         matches = find_users_by_last_login_year(gis, year)
         added = add_users_to_csv(args.input, matches)
-        print(f"Found {len(matches)} user(s) with last login in {year}; added {len(added)} new username(s) to {args.input}")
+        log.info("Found %d user(s) with last login in %s; added %d new username(s) to %s", len(matches), year, len(added), args.input)
 
     usernames = read_usernames(args.input)
     if not usernames:
-        print("No usernames found in input CSV.")
+        log.error("No usernames found in input CSV.")
         sys.exit(1)
 
-    print(f"{len(usernames)} user(s) queued for deletion: {', '.join(usernames)}")
+    log.info("%d user(s) queued for deletion: %s", len(usernames), ", ".join(usernames))
     if not args.dry_run and not args.yes:
         confirm = input("This will PERMANENTLY delete content, groups, licenses, and profiles for these users. Type 'DELETE' to continue: ")
         if confirm.strip() != "DELETE":
-            print("Aborted.")
+            log.warning("Aborted.")
             sys.exit(1)
 
     results = []
     for username in usernames:
-        print(f"\n=== Processing {username} ===")
+        log.info("=== Processing %s ===", username)
         result = delete_user(gis, username, args.dry_run)
         for note in result["notes"]:
-            print(f"  - {note}")
-        print(f"  Status: {result['status']}")
+            log_note(note)
+        log.info("  Status: %s", result["status"])
         if result["status"] == "deleted":
             log_deleted_user(args.deleted_log, gis.users.me.username, username, result["last_login"])
         results.append(result)
 
     report_path = write_report(results, args.input)
-    print(f"\nReport written to {report_path}")
+    log.info("Report written to %s", report_path)
 
 
 if __name__ == "__main__":
