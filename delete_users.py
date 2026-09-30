@@ -98,7 +98,7 @@ def connect(url: str, credentials_file: str) -> GIS:
             password = getpass.getpass("Admin password: ")
 
     gis = GIS(url, username, password)
-   log.info("Connected to %s as %s", url, gis.users.me.username)
+      log.info("Connected to %s as %s", url, gis.users.me.username)
 return gis
  
 

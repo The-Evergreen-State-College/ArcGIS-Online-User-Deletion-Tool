@@ -13,6 +13,8 @@ account can be deleted, then deletes the account via the REST API.
   - [🗂️ Files](#️-files)
   - [📗 Instructions](#-instructions)
     - [1. Configure credentials](#1-configure-credentials)
+      - [A. Local credentials in .env file](#a-local-credentials-in-env-file)
+      - [B. Python keyring](#b-python-keyring)
     - [2. Queue users for deletion](#2-queue-users-for-deletion)
     - [3. Dry run (recommended)](#3-dry-run-recommended)
     - [4. Run for real](#4-run-for-real)
@@ -98,7 +100,8 @@ pip install -r requirements.txt
 
 ### 1. Configure credentials
 
-Create `credentials.txt` (already `.gitignore`d) next to the script:
+#### A. Local credentials in .env file
+Create `.env` (already `.gitignore`) next to the script:
 
 ```ini
 admin_username=your_admin_account
@@ -111,7 +114,8 @@ package, service name `arcgis-online-delete-users`) for the password. If
 neither the file nor the keyring has a password, you'll get an interactive
 prompt (username + masked password).
 
-To store a password in the keyring instead of `credentials.txt`:
+#### B. Python keyring
+To store a password in the keyring instead of `.env`:
 
 ```powershell
 python -c "import keyring; keyring.set_password('arcgis-online-delete-users', 'your_admin_account', 'your_password')"
@@ -119,7 +123,7 @@ python -c "import keyring; keyring.set_password('arcgis-online-delete-users', 'y
 
 > ⚠️ **Security note:** storing a plaintext password on disk is a tradeoff for
 > automation convenience. Prefer the keyring or the interactive prompt, and
-> rotate the admin password if `credentials.txt` is ever shared or committed.
+> rotate the admin password if `.env` is ever shared or committed.
 
 ### 2. Queue users for deletion
 

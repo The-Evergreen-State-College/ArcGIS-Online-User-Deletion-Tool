@@ -18,6 +18,13 @@
 
 ---
 
+#### Version 1.1.1
+#### Fixed
+- python indentation
+- Readme referencing
+
+---
+
 #### Version 1.1.0
 #### Added
 - requirements
@@ -25,10 +32,6 @@
 - txt files to .env files
 - Credentials are loaded via `python-dotenv`
 - .gitignore list
-
-
----
-
 
 #### Version 1.0.0 
 
