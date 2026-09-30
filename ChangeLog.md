@@ -18,13 +18,17 @@
 
 ---
 
+#### Version 1.2.0
+#### Changed
+- program is now more robust
+
+---
+
 #### Version 1.1.2
 #### Fixed
 - python indentation
 - Readme referencing
-
----
-
+- 
 #### Version 1.1.1
 #### Fixed
 - python indentation

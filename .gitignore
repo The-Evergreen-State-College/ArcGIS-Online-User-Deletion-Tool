@@ -16,3 +16,6 @@ reports/*
 # Ignore everything inside logs/
 logs/*
 !logs/.gitkeep
+
+# ignore old files
+*.old
