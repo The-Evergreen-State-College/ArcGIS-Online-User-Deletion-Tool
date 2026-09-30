@@ -1,7 +1,18 @@
+# Ignore the .env file and any other .env.* files, but keep the .env.example file
 .env
 .env.*
 !.env.example
+
+# Ignore Python bytecode files and cache directories
 __pycache__/
 *.pyc
-reports/
-logs/
+
+# Ignore everything inside reports/
+reports/*
+ 
+# But keep the placeholder file
+!reports/.gitkeep
+
+# Ignore everything inside logs/
+logs/*
+!logs/.gitkeep

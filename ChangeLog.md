@@ -18,13 +18,18 @@
 
 ---
 
-#### Version 1.1.1
+#### Version 1.1.2
 #### Fixed
 - python indentation
 - Readme referencing
 
 ---
 
+#### Version 1.1.1
+#### Fixed
+- python indentation
+- Readme referencing
+  
 #### Version 1.1.0
 #### Added
 - requirements
