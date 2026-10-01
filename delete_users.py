@@ -282,6 +282,9 @@ def get_assigned_licenses(gis: GIS, username: str) -> list[str]:
         except Exception as exc:
             if "not licensed by user" in str(exc).lower():
                 continue
+            if "403" in str(exc) or "permissions" in str(exc).lower():
+                logging.warning("Skipping license check for %s: %s", title, exc)
+                continue
             raise RuntimeError(f"Unable to verify license {title}: {exc}") from exc
 
         entitlements = (user_entitlements or {}).get("entitlements", [])
@@ -418,6 +421,9 @@ def revoke_licenses(gis: GIS, user, dry_run: bool) -> list[str]:
             entitlements = (user_entitlements or {}).get("entitlements", [])
         except Exception as exc:
             if "not licensed by user" in str(exc).lower():
+                continue
+            if "403" in str(exc) or "permissions" in str(exc).lower():
+                notes.append(f"WARNING: skipping license check for {title} (no permission to query entitlements): {exc}")
                 continue
             notes.append(f"ERROR reading entitlements for {title}: {exc}")
             continue

@@ -18,6 +18,16 @@
 
 ---
 
+#### Version 1.5.1
+#### Fixed
+- ArcGIS account lacks permission to read entitlement data for the Snap2Map license, causing a 403 that previously made the tool block the whole user deletion.
+- Code fix: 403/permission errors on license entitlement checks are now logged as a warning and skipped, rather than blocking deletion.
+#### Changed
+- gitignore deleted_users.csv file
+
+
+---
+
 #### Version 1.5.0
 
 #### Added
@@ -26,8 +36,6 @@
 #### Changed
 - `--input` values ending in `.csv` are read as CSV files; other values are treated as usernames.
 - Year-based matches are combined with a directly supplied username without writing a file.
-
----
 
 #### Version 1.4.0
  
@@ -42,8 +50,6 @@
 #### Removed
 - Removed `delete_users_by_year.txt`.
 
-
----
 
 #### Version 1.3.0
  
