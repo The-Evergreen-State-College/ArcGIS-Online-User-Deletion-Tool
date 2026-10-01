@@ -18,6 +18,17 @@
 
 ---
 
+#### Version 1.5.0
+
+#### Added
+- Added support for passing a single username directly to `--input`.
+
+#### Changed
+- `--input` values ending in `.csv` are read as CSV files; other values are treated as usernames.
+- Year-based matches are combined with a directly supplied username without writing a file.
+
+---
+
 #### Version 1.4.0
  
 #### Added

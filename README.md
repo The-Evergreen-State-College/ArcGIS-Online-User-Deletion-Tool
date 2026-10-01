@@ -60,6 +60,7 @@ process is repeatable, auditable, and safe to run in bulk.
 - 🧪 `--dry-run` mode previews every action with zero destructive calls.
 - ⌨️ Requires typing `DELETE` to confirm before any real run (skippable with
   `--yes` for scripted/unattended use).
+- 👤 Accepts either a `.csv` input queue or one username directly with `--input`.
 - 📅 Optional **year-based targeting**: set `DELETE_USERS_BY_LAST_LOGIN_YEAR`
   in `.env` to one or more comma-separated years (for example, `2020,2021`)
   to auto-queue org members whose last login falls in any listed year. The
@@ -92,7 +93,7 @@ pip -m install -r requirements.txt
 | File | Purpose |
 |---|---|
 | [`delete_users.py`](delete_users.py) | Main script |
-| [`users.csv`](users.csv) | Input queue — one `username` per line |
+| [`users.csv`](users.csv) | Optional input queue — one `username` per line; `--input` also accepts one username directly |
 | [`.env`](.env) | Optional local credentials and targeting configuration (not committed) |
 | [`.env.template`](.env.template) | Committed template; copy to .env |
 | [`deleted_users.csv`](deleted_users.csv) | Running audit log of every user this tool has deleted |
@@ -146,6 +147,13 @@ jdoe
 asmith
 ```
 
+For a one-user run, pass the username directly. Any `--input` value that does
+not end in `.csv` is treated as a username, not as a file path:
+
+```powershell
+python delete_users.py --url https://geoduck.maps.arcgis.com --input kerwin_claire --dry-run
+```
+
 ### 3. Dry run (recommended)
 
 ```powershell
@@ -170,7 +178,7 @@ for unattended/scheduled runs.
 | Flag | Default | Description |
 |---|---|---|
 | `--url` | *(required)* | ArcGIS Online organization URL |
-| `--input` | *(required)* | CSV file with a `username` column |
+| `--input` | *(required)* | `.csv` file with a `username` column, or a single username if the value does not end in `.csv` |
 | `--dry-run` | off | Preview actions without deleting anything |
 | `--yes` | off | Skip the typed `DELETE` confirmation |
 | `--credentials-file` | `.env` | Path to the configuration and credentials file |

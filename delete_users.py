@@ -99,7 +99,12 @@ def connect(url: str, credentials_file: str) -> GIS:
     return gis
 
 
-def read_usernames(csv_path: str) -> list[str]:
+def read_usernames(input_value: str) -> list[str]:
+    if not input_value.lower().endswith(".csv"):
+        username = input_value.strip()
+        return [username] if username else []
+
+    csv_path = input_value
     if not os.path.isfile(csv_path):
         return []
 
@@ -666,6 +671,7 @@ def main():
     gis = connect(ago_url, args.credentials_file)
     admin_username = gis.users.me.username
 
+    year_matches = []
     if years:
         log.info("Year filter active: DELETE_USERS_BY_LAST_LOGIN_YEAR=%s", ",".join(map(str, years)))
         matches = []
@@ -673,10 +679,21 @@ def main():
             matches.extend(
                 find_users_by_last_login_year(gis, year, exclude_username=admin_username)
             )
-        added = add_users_to_csv(args.input, matches)
-        log.info("Found %d user(s); added %d new user(s) to %s", len(matches), len(added), args.input)
+        if args.input.lower().endswith(".csv"):
+            added = add_users_to_csv(args.input, matches)
+            log.info("Found %d user(s); added %d new user(s) to %s", len(matches), len(added), args.input)
+        else:
+            year_matches = matches
+            log.info("Found %d user(s) matching the year filter", len(matches))
 
     usernames = read_usernames(args.input)
+    seen_usernames = {username.casefold() for username in usernames}
+    for username in year_matches:
+        key = username.casefold()
+        if key not in seen_usernames:
+            seen_usernames.add(key)
+            usernames.append(username)
+
     if not usernames:
         log.warning("No usernames queued for deletion. Nothing to do.")
         return
