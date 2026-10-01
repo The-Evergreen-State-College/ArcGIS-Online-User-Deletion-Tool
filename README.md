@@ -60,9 +60,11 @@ process is repeatable, auditable, and safe to run in bulk.
 - 🧪 `--dry-run` mode previews every action with zero destructive calls.
 - ⌨️ Requires typing `DELETE` to confirm before any real run (skippable with
   `--yes` for scripted/unattended use).
-- 📅 Optional **year-based targeting**: set `LAST_LOGON_YEAR=<year>` in
-  [`delete_users_by_year.txt`](delete_users_by_year.txt) to auto-queue every
-  org member whose last login falls in that year.
+- 📅 Optional **year-based targeting**: set `DELETE_USERS_BY_LAST_LOGIN_YEAR`
+  in `.env` to one or more comma-separated years (for example, `2020,2021`)
+  to auto-queue org members whose last login falls in any listed year. The
+  `--DELETE_USERS_BY_LAST_LOGIN_YEAR` command-line option overrides the `.env`
+  value.
 - 📝 Every successfully deleted user is appended to
   [`deleted_users.csv`](deleted_users.csv) with date, admin, and last-login
   metadata.
@@ -91,9 +93,8 @@ pip -m install -r requirements.txt
 |---|---|
 | [`delete_users.py`](delete_users.py) | Main script |
 | [`users.csv`](users.csv) | Input queue — one `username` per line |
-| [`.env`](.env) | Optional local `ADMIN_USERNAME=`/`ADMIN_PASSWORD=` file (not committed) |
+| [`.env`](.env) | Optional local credentials and targeting configuration (not committed) |
 | [`.env.template`](.env.template) | Committed template; copy to .env |
-| [`delete_users_by_year.txt`](delete_users_by_year.txt) | Optional `LAST_LOGON_YEAR=<year>` filter |
 | [`deleted_users.csv`](deleted_users.csv) | Running audit log of every user this tool has deleted |
 | [`reports/`](reports) | Per-run CSV reports (status/notes per user) |
 | `logs/` | Timestamped `.log` files (structured logging output, gitignored) |
@@ -106,12 +107,20 @@ pip -m install -r requirements.txt
 Create `.env` (already `.gitignore`) next to the script:
 
 ```ini
-admin_username=your_admin_account
-admin_password=your_password
+AGO_URL=https://your-org.maps.arcgis.com
+ADMIN_USERNAME=your_admin_account
+ADMIN_PASSWORD=your_password
+DELETE_USERS_BY_LAST_LOGIN_YEAR=2000,2001
 ```
 
-If this file is missing, or either value is blank, the script falls back to
-the OS keyring (via the [`keyring`](https://pypi.org/project/keyring/)
+`DELETE_USERS_BY_LAST_LOGIN_YEAR` is optional. Leave it blank to disable
+year-based targeting, or list multiple four-digit years separated by commas.
+Each year must be between 1970 and the current year. When this variable is
+set, matching organization members are added to the input CSV before it is
+processed.
+
+If this file is missing, or `ADMIN_USERNAME` or `ADMIN_PASSWORD` is blank,
+the script falls back to the OS keyring (via the [`keyring`](https://pypi.org/project/keyring/)
 package, service name `arcgis-online-delete-users`) for the password. If
 neither the file nor the keyring has a password, you'll get an interactive
 prompt (username + masked password).
@@ -164,10 +173,21 @@ for unattended/scheduled runs.
 | `--input` | *(required)* | CSV file with a `username` column |
 | `--dry-run` | off | Preview actions without deleting anything |
 | `--yes` | off | Skip the typed `DELETE` confirmation |
-| `--credentials-file` | `credentials.txt` | Path to the admin credentials file |
+| `--credentials-file` | `.env` | Path to the configuration and credentials file |
 | `--deleted-log` | `deleted_users.csv` | Audit log appended to on each successful deletion |
-| `--year-file` | `delete_users_by_year.txt` | Optional `LAST_LOGON_YEAR=<year>` auto-queue filter |
+| `--DELETE_USERS_BY_LAST_LOGIN_YEAR` | `.env` value | Optional comma-separated years for auto-queueing; overrides the `.env` value |
 | `--logs-dir` | `logs` | Directory for the timestamped `.log` file (in addition to STDOUT) |
+
+For example, target members last active in 2020 or 2021, overriding the value
+in `.env`:
+
+```powershell
+python delete_users.py --input users.csv --DELETE_USERS_BY_LAST_LOGIN_YEAR 2020,2021 --dry-run
+```
+
+Year entries must contain exactly four numeric digits and be between 1970 and
+the current year. The command-line option is optional; when omitted, the value
+from `.env` is used.
 
 ## 📓 Logs & Reports
 

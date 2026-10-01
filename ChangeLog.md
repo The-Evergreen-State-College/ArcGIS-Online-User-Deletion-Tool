@@ -18,6 +18,22 @@
 
 ---
 
+#### Version 1.4.0
+ 
+#### Added
+- Added `DELETE_USERS_BY_LAST_LOGIN_YEAR` configuration variable to `.env`.
+- Added optional `--DELETE_USERS_BY_LAST_LOGIN_YEAR` command-line override.
+ 
+#### Changed
+- Year-based user targeting now reads `DELETE_USERS_BY_LAST_LOGIN_YEAR` from `.env`.
+- Configuration values are consolidated into `.env`.
+ 
+#### Removed
+- Removed `delete_users_by_year.txt`.
+
+
+---
+
 #### Version 1.3.0
  
 #### Added
@@ -28,8 +44,6 @@
 - Made the `--url` parameter optional.
 - `--url` now overrides `AGO_URL` when both are provided.
 - Organization URL is now resolved from `--url`, `.env`, or an interactive prompt, in that order.
-
----
 
 #### Version 1.2.0
 #### Changed

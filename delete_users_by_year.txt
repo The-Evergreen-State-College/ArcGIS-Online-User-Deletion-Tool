@@ -1,2 +1,0 @@
-# Use the "Last Login" timestamp, using the year, to delete all users who's last logon year matches.
-LAST_LOGON_YEAR=

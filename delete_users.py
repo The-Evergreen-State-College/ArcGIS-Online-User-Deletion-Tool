@@ -127,36 +127,29 @@ def read_usernames(csv_path: str) -> list[str]:
         return usernames
 
 
-def read_year_filter(path: str) -> int | None:
-    if not path or not os.path.isfile(path):
+def parse_year_filter(value: str | None) -> list[int] | None:
+    """Parse and validate comma-separated last-login years."""
+    if value is None or not value.strip():
         return None
 
-    with open(path, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
+    current_year = datetime.datetime.now(datetime.timezone.utc).year
+    years = []
+    for entry in value.split(","):
+        year_text = entry.strip()
+        if len(year_text) != 4 or not year_text.isascii() or not year_text.isdigit():
+            raise ValueError(
+                "DELETE_USERS_BY_LAST_LOGIN_YEAR entries must be four-digit numeric years"
+            )
 
-            key, _, value = line.partition("=")
-            if key.strip() != "LAST_LOGON_YEAR":
-                continue
+        year = int(year_text)
+        if year < 1970 or year > current_year:
+            raise ValueError(
+                f"DELETE_USERS_BY_LAST_LOGIN_YEAR entries must be between 1970 and {current_year}"
+            )
+        if year not in years:
+            years.append(year)
 
-            value = value.strip()
-            if not value:
-                continue
-
-            try:
-                year = int(value)
-            except ValueError as exc:
-                raise ValueError("LAST_LOGON_YEAR must be a four-digit year") from exc
-
-            current_year = datetime.datetime.now(datetime.timezone.utc).year
-            if year < 1970 or year > current_year:
-                raise ValueError(f"LAST_LOGON_YEAR must be between 1970 and {current_year}")
-
-            return year
-
-    return None
+    return years
 
 
 def find_users_by_last_login_year(
@@ -629,17 +622,31 @@ def main():
     parser.add_argument("--yes", action="store_true", help="Skip confirmation prompt")
     parser.add_argument("--credentials-file", default=".env", help="Path to credentials .env")
     parser.add_argument("--deleted-log", default="deleted_users.csv", help="Deleted users log")
-    parser.add_argument("--year-file", default="delete_users_by_year.txt", help="Year filter file")
+    parser.add_argument(
+        "--DELETE_USERS_BY_LAST_LOGIN_YEAR",
+        dest="delete_users_by_last_login_year",
+        help="Comma-separated last-login years (overrides .env)",
+    )
     parser.add_argument("--logs-dir", default="logs", help="Log output directory")
 
     args = parser.parse_args()
+    env_values = read_credentials(args.credentials_file)
+
+    year_value = (
+        args.delete_users_by_last_login_year
+        if args.delete_users_by_last_login_year is not None
+        else env_values.get("DELETE_USERS_BY_LAST_LOGIN_YEAR")
+    )
+    try:
+        years = parse_year_filter(year_value)
+    except ValueError as exc:
+        parser.error(str(exc))
 
     # Determine the ArcGIS Online organization URL.
     # Priority: --url argument -> AGO_URL in .env -> console prompt.
     if args.url:
         ago_url = args.url.strip()
     else:
-        env_values = read_credentials(args.credentials_file)
         ago_url = (env_values.get("AGO_URL") or "").strip()
     
     if not ago_url:
@@ -659,10 +666,13 @@ def main():
     gis = connect(ago_url, args.credentials_file)
     admin_username = gis.users.me.username
 
-    year = read_year_filter(args.year_file)
-    if year is not None:
-        log.info("Year filter active: LAST_LOGON_YEAR=%s", year)
-        matches = find_users_by_last_login_year(gis, year, exclude_username=admin_username)
+    if years:
+        log.info("Year filter active: DELETE_USERS_BY_LAST_LOGIN_YEAR=%s", ",".join(map(str, years)))
+        matches = []
+        for year in years:
+            matches.extend(
+                find_users_by_last_login_year(gis, year, exclude_username=admin_username)
+            )
         added = add_users_to_csv(args.input, matches)
         log.info("Found %d user(s); added %d new user(s) to %s", len(matches), len(added), args.input)
 
