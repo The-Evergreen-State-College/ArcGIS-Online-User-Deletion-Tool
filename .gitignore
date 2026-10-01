@@ -19,3 +19,6 @@ logs/*
 
 # ignore old files
 *.old
+
+# Ignore the deleted_users.csv file
+deleted_users.csv
